@@ -23,7 +23,7 @@ namespace AppointmentRetriever
         {
             var rooms = new List<string>();
 
-            var directoryEntry = new DirectoryEntry(LdapAddress);
+            var directoryEntry = new DirectoryEntry(LdapAddress, ExchangeUserName, ExchangeUserPassword);
             var directorySearcher = new DirectorySearcher(directoryEntry)
             {
                 Filter = LdapFilter
