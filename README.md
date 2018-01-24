@@ -6,7 +6,7 @@ For this to work (view the calendar of a mailbox from another user), a user is r
 
 * A note on FullAccess: Full access “Allows the delegate to open the mailbox, and view, add and remove the contents of the mailbox. Doesn't allow the delegate to send messages from the mailbox.”
 
-#### The follow PowerShell commands will issue FullAccess rights to a user
+#### The following PowerShell commands will issue FullAccess rights to a user
 
 ```powershell
 $URL = "<url to your exchange server>"
