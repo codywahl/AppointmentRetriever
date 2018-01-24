@@ -1,6 +1,6 @@
 # AppointmentRetriever
 
-This console application is an example which demonstrates how one can retrieve all resource mailboxes designated as a meeting room from Active Directory and then retrieve each of their appointments.
+This console application is an example which demonstrates how one can retrieve all resource mailboxes designated as a meeting room from Active Directory and then retrieve each of their appointments using the Exchange Web Services API.
 
 For this to work (view the calendar of a mailbox from another user), a user is required that has Full Access rights to each of the room mailboxes you wish to access. By connecting to the exchange server via a powershell session, using an admin account, we can issue give a user this level of access rights to all room mailboxes. 
 
