@@ -16,7 +16,7 @@ Import-PSSession $Session
 Get-Mailbox -ResultSize unlimited -Filter {(RecipientTypeDetails -eq 'RoomMailbox') -and (Alias -ne 'Admin')} | Add-MailboxPermission -User <the user email you want to assign access to> -AccessRights fullaccess -InheritanceType all -AutoMapping:$false
 ```
 
-####Other userful scripts
+#### Other userful scripts
 
 Get all room mailboxes
 ```powershell
