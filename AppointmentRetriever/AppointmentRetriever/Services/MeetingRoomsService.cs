@@ -6,9 +6,9 @@ using System.DirectoryServices;
 using System.Linq;
 using System.Net;
 
-namespace AppointmentRetriever
+namespace AppointmentRetriever.Services
 {
-    public class ExchangeWebServicesWrapper
+    public class MeetingRoomsService
     {
         private static readonly string LdapAddress = ConfigurationManager.AppSettings["LDAPAddress"];
         private static readonly string ExchangeUserName = ConfigurationManager.AppSettings["ExchangeUserName"];
@@ -61,6 +61,25 @@ namespace AppointmentRetriever
             }
         }
 
+        public static void CancelAppointment(string meetingId, string messageBody = "Cancelled by RightCrowd", bool isReadReceiptRequested = false)
+        {
+            var service = GetExchangeService();
+
+            try
+            {
+                var itemId = new ItemId(meetingId);
+                var appointment = Appointment.Bind(service, itemId);
+                service.ImpersonatedUserId = new ImpersonatedUserId(ConnectingIdType.SmtpAddress, appointment.Organizer.Address);
+
+                appointment.Delete(DeleteMode.MoveToDeletedItems, SendCancellationsMode.SendOnlyToAll);
+                //var cancelResults = appointment.CancelMeeting(messageBody);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+        }
+
         private static ExchangeService GetExchangeService(bool traceEnabled = false)
         {
             ServicePointManager.ServerCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
@@ -88,14 +107,14 @@ namespace AppointmentRetriever
             // Autodiscover does not work on our test exchange server
             // Best practice is to use the auto-discover, according to MS, but its not neccessary.
             // Calling autodiscover after setting the url in the constructor should, in theory, overwrite it, if it works. If not, oh well.
-            try
-            {
-                service.AutodiscoverUrl($"{ExchangeUserName}@{ExchangeUserDomain}");
-            }
-            catch (AutodiscoverLocalException)
-            {
-                //Autodiscover failed, use the previously set url.
-            }
+            //try
+            //{
+            //    service.AutodiscoverUrl($"{ExchangeUserName}@{ExchangeUserDomain}");
+            //}
+            //catch (AutodiscoverLocalException)
+            //{
+            //    //Autodiscover failed, use the previously set url.
+            //}
 
             return service;
         }
