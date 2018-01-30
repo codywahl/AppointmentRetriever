@@ -25,14 +25,14 @@ namespace AppointmentRetriever.Services
 
             if (ourVersionOfAppointment == null)
             {
-                Console.WriteLine("Adding appointment...");
+                Console.WriteLine("\t(AppointmentManager: Adding appointment...)");
                 _appointments.Add(appointment);
                 return;
             }
 
             if (!WeHaveTheCurrentVersion(ourVersionOfAppointment, appointment))
             {
-                Console.WriteLine("Appointment change detected. Send message to bus or whatever.");
+                Console.WriteLine("((Appointment change detected. Send message to bus or whatever.))");
                 UpdateAppointment(ourVersionOfAppointment, appointment);
             }
         }
@@ -91,7 +91,7 @@ namespace AppointmentRetriever.Services
                 throw new ArgumentNullException(nameof(exchangeVersionOfAppointment));
             }
 
-            Console.WriteLine("Updating appointment...");
+            Console.WriteLine("\t(AppointmentManager:Updating appointment...)");
 
             var index = _appointments.IndexOf(ourVersionOfAppointment);
             if (index != -1)

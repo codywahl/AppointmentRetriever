@@ -51,7 +51,14 @@ namespace AppointmentRetriever.Services
                 var cv = new CalendarView(startDate, endDate);
 
                 var calendarFolderId = new FolderId(WellKnownFolderName.Calendar, mailboxToAccess);
-                return service.FindAppointments(calendarFolderId, cv).ToList();
+                var findResults = service.FindAppointments(calendarFolderId, cv).ToList();
+
+                if (findResults.Count > 0)
+                {
+                    service.LoadPropertiesForItems(findResults, PropertySet.FirstClassProperties);
+                }
+
+                return findResults;
             }
             catch (Exception ex)
             {
@@ -59,6 +66,22 @@ namespace AppointmentRetriever.Services
                 Console.WriteLine();
                 return null;
             }
+        }
+
+        public static Appointment GetAppointmentForUserByICalId(string mailboxToAccess, int numberOfMonths,
+            string iCalId)
+        {
+            return GetAppointmentsForUser(mailboxToAccess, numberOfMonths)
+                .FirstOrDefault(x => x.ICalUid.Equals(iCalId));
+        }
+
+        public static Appointment GetOrganizerItemBinding(Appointment appointment)
+        {
+            var service = GetExchangeService();
+
+
+            service.ImpersonatedUserId = new ImpersonatedUserId(ConnectingIdType.SmtpAddress, appointment.Organizer.Address);
+            return Appointment.Bind(service, appointment.Id);
         }
 
         public static void CancelAppointment(string meetingId, string messageBody = "Cancelled by RightCrowd", bool isReadReceiptRequested = false)

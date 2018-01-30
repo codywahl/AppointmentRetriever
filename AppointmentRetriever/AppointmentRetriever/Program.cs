@@ -1,5 +1,8 @@
 ﻿using AppointmentRetriever.Services;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.Exchange.WebServices.Data;
 
 namespace AppointmentRetriever
 {
@@ -51,16 +54,24 @@ namespace AppointmentRetriever
 
                         foreach (var appointment in appointments)
                         {
+                            // From the point of view of the meeting room, certian information is different than from the organizer's pov. Use this to get the organizer pov if so desired. 
+                            //var organizerAppointment =
+                            //    MeetingRoomsService.GetAppointmentForUserByICalId(appointment.Organizer.Address, 2,
+                            //        appointment.ICalUid);
+
                             _appointmentManager.AddOrUpdateAppointment(appointment);
                             Console.WriteLine($"\t-----------------------------------------------------------------");
-                            Console.WriteLine($"\t       Subject: {appointment.Subject}");
-                            Console.WriteLine($"\t    Start Time: {appointment.Start}");
-                            Console.WriteLine($"\t      End Time: {appointment.End}");
-                            Console.WriteLine($"\t       ICal Id: {appointment.ICalUid}");
-                            Console.WriteLine($"\t     Unique Id: {appointment.Id.UniqueId}");
-                            Console.WriteLine($"\t     Change Id: {appointment.Id.ChangeKey}");
-                            Console.WriteLine($"\t     Organizer: {appointment.Organizer}");
+                            Console.WriteLine($"\t           Subject: {appointment.Subject}");
+                            Console.WriteLine($"\t        Start Time: {appointment.Start}");
+                            Console.WriteLine($"\t          End Time: {appointment.End}");
+                            Console.WriteLine($"\t           ICal Id: ...{appointment.ICalUid.Substring(appointment.ICalUid.Length - 30)}");
+                            Console.WriteLine($"\t         Unique Id: ...{appointment.Id.UniqueId.Substring(appointment.Id.UniqueId.Length - 30)}");
+                            Console.WriteLine($"\t         Change Id: {appointment.Id.ChangeKey}");
+                            Console.WriteLine($"\t         Organizer: {appointment.Organizer}");
+                            Console.WriteLine($"\tRequired Attendees: {GetAttendeeNamesAndResponse(appointment.RequiredAttendees)}");
+                            Console.WriteLine($"\tOptional Attendees: {GetAttendeeNamesAndResponse(appointment.OptionalAttendees)}");
                             Console.WriteLine($"\t-----------------------------------------------------------------");
+                            
                         }
                     }
                 }
@@ -73,6 +84,29 @@ namespace AppointmentRetriever
             Console.WriteLine();
             Console.WriteLine($"Appointment Manager Count: {_appointmentManager.GetAppointmentCount()}");
             Console.WriteLine();
+        }
+
+        private static string GetAttendeeNamesAndResponse(AttendeeCollection attendees)
+        {
+            var nameList = new List<string>();
+            foreach (var attendee in attendees)
+            {
+                var s = attendee.Name + " -> ";
+
+                if (attendee.ResponseType.HasValue)
+                {
+                    s += attendee.ResponseType.Value;
+                }
+                else
+                {
+                    s += "None";
+                }
+
+                nameList.Add(s);
+            }
+            //var nameList = attendees.Select(attendee => attendee.Name + " -> " + attendee.ResponseType.Value ?? "test"  ).ToList();
+
+            return string.Join(",", nameList);
         }
     }
 }
