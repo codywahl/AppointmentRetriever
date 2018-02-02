@@ -10,6 +10,8 @@ namespace AppointmentRetriever.Services
 {
     public class MeetingRoomsService
     {
+        #region Fields
+
         private static readonly string LdapAddress = ConfigurationManager.AppSettings["LDAPAddress"];
         private static readonly string ExchangeUserName = ConfigurationManager.AppSettings["ExchangeUserName"];
         private static readonly string ExchangeUserPassword = ConfigurationManager.AppSettings["ExchangeUserPassword"];
@@ -19,10 +21,10 @@ namespace AppointmentRetriever.Services
 
         private const string LdapFilter = "(&(&(&(mailNickname=*)(objectcategory=person)(objectclass=user)(msExchRecipientDisplayType=7))))";
 
+        #endregion Fields
+
         public static List<string> GetAllRoomAddressesFromActiveDirectory()
         {
-            var rooms = new List<string>();
-
             var directoryEntry = new DirectoryEntry(LdapAddress, ExchangeUserName, ExchangeUserPassword);
             var directorySearcher = new DirectorySearcher(directoryEntry)
             {
@@ -32,12 +34,7 @@ namespace AppointmentRetriever.Services
             directorySearcher.PropertiesToLoad.Add("sn");
             directorySearcher.PropertiesToLoad.Add("mail");
 
-            foreach (SearchResult searchResult in directorySearcher.FindAll())
-            {
-                rooms.Add(searchResult.Properties["mail"][0].ToString());
-            }
-
-            return rooms;
+            return (from SearchResult searchResult in directorySearcher.FindAll() select searchResult.Properties["mail"][0].ToString()).ToList();
         }
 
         public static List<Appointment> GetAppointmentsForUser(string mailboxToAccess, int numberOfMonths)
@@ -51,6 +48,7 @@ namespace AppointmentRetriever.Services
                 var cv = new CalendarView(startDate, endDate);
 
                 var calendarFolderId = new FolderId(WellKnownFolderName.Calendar, mailboxToAccess);
+                service.ImpersonatedUserId = new ImpersonatedUserId(ConnectingIdType.SmtpAddress, mailboxToAccess);
                 var findResults = service.FindAppointments(calendarFolderId, cv).ToList();
 
                 if (findResults.Count > 0)
@@ -68,8 +66,7 @@ namespace AppointmentRetriever.Services
             }
         }
 
-        public static Appointment GetAppointmentForUserByICalId(string mailboxToAccess, int numberOfMonths,
-            string iCalId)
+        public static Appointment GetAppointmentForUserByICalId(string mailboxToAccess, int numberOfMonths, string iCalId)
         {
             return GetAppointmentsForUser(mailboxToAccess, numberOfMonths)
                 .FirstOrDefault(x => x.ICalUid.Equals(iCalId));
@@ -78,7 +75,6 @@ namespace AppointmentRetriever.Services
         public static Appointment GetOrganizerItemBinding(Appointment appointment)
         {
             var service = GetExchangeService();
-
 
             service.ImpersonatedUserId = new ImpersonatedUserId(ConnectingIdType.SmtpAddress, appointment.Organizer.Address);
             return Appointment.Bind(service, appointment.Id);
@@ -102,6 +98,8 @@ namespace AppointmentRetriever.Services
                 Console.WriteLine(ex);
             }
         }
+
+        #region Private Helpers
 
         private static ExchangeService GetExchangeService(bool traceEnabled = false)
         {
@@ -141,5 +139,7 @@ namespace AppointmentRetriever.Services
 
             return service;
         }
+
+        #endregion Private Helpers
     }
 }
