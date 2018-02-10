@@ -39,24 +39,30 @@ namespace AppointmentRetriever.Services
 
         public static List<Appointment> GetAppointmentsForUser(string mailboxToAccess, int numberOfMonths)
         {
-            var service = GetExchangeService();
+            if (string.IsNullOrWhiteSpace(mailboxToAccess))
+            {
+                throw new ArgumentNullException(nameof(mailboxToAccess));
+            }
 
             try
             {
+                var service = GetExchangeService();
+                service.ImpersonatedUserId = new ImpersonatedUserId(ConnectingIdType.SmtpAddress, mailboxToAccess);
+
                 var startDate = DateTime.Today;
                 var endDate = DateTime.Today.AddMonths(numberOfMonths);
-                var cv = new CalendarView(startDate, endDate);
-
+                var psPropSet = new PropertySet(BasePropertySet.FirstClassProperties);
+                var calendarView = new CalendarView(startDate, endDate) { PropertySet = psPropSet };
                 var calendarFolderId = new FolderId(WellKnownFolderName.Calendar, mailboxToAccess);
-                service.ImpersonatedUserId = new ImpersonatedUserId(ConnectingIdType.SmtpAddress, mailboxToAccess);
-                var findResults = service.FindAppointments(calendarFolderId, cv).ToList();
 
-                if (findResults.Count > 0)
+                var roomAppointments = service.FindAppointments(calendarFolderId, calendarView).ToList();
+
+                if (roomAppointments.Count > 0)
                 {
-                    service.LoadPropertiesForItems(findResults, PropertySet.FirstClassProperties);
+                    service.LoadPropertiesForItems(roomAppointments, psPropSet);
                 }
 
-                return findResults;
+                return roomAppointments;
             }
             catch (Exception ex)
             {
@@ -64,20 +70,6 @@ namespace AppointmentRetriever.Services
                 Console.WriteLine();
                 return null;
             }
-        }
-
-        public static Appointment GetAppointmentForUserByICalId(string mailboxToAccess, int numberOfMonths, string iCalId)
-        {
-            return GetAppointmentsForUser(mailboxToAccess, numberOfMonths)
-                .FirstOrDefault(x => x.ICalUid.Equals(iCalId));
-        }
-
-        public static Appointment GetOrganizerItemBinding(Appointment appointment)
-        {
-            var service = GetExchangeService();
-
-            service.ImpersonatedUserId = new ImpersonatedUserId(ConnectingIdType.SmtpAddress, appointment.Organizer.Address);
-            return Appointment.Bind(service, appointment.Id);
         }
 
         public static void CancelAppointment(string meetingId, string messageBody = "Cancelled by RightCrowd", bool isReadReceiptRequested = false)
@@ -138,6 +130,34 @@ namespace AppointmentRetriever.Services
             //}
 
             return service;
+        }
+
+        private static Appointment GetAppointmentForUserOnDateByICalId(string mailboxToAccess, DateTime startDate, DateTime endDate, string iCalId)
+        {
+            var service = GetExchangeService();
+
+            try
+            {
+                var calendarView = new CalendarView(startDate, endDate);
+
+                var calendarFolderId = new FolderId(WellKnownFolderName.Calendar, mailboxToAccess);
+                service.ImpersonatedUserId = new ImpersonatedUserId(ConnectingIdType.SmtpAddress, mailboxToAccess);
+
+                var foundAppointments = service.FindAppointments(calendarFolderId, calendarView).ToList();
+
+                if (foundAppointments.Count > 0)
+                {
+                    service.LoadPropertiesForItems(foundAppointments, PropertySet.FirstClassProperties);
+                }
+
+                return foundAppointments.FirstOrDefault(x => x.ICalUid.Equals(iCalId) && x.Start.Equals(startDate) && x.End.Equals(endDate));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                Console.WriteLine();
+                return null;
+            }
         }
 
         #endregion Private Helpers

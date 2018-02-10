@@ -68,47 +68,21 @@ namespace AppointmentRetriever
 
         private static void GetMeetings()
         {
-            var output = $"{Environment.NewLine}{"Room",-35}{"Appointment Count",-45}{Environment.NewLine}";
-            output += $"-----------------------------------------------------------------------{Environment.NewLine}{Environment.NewLine}";
+            Console.WriteLine($"{Environment.NewLine}{"Room",-35}{"Appointment Count",-45}");
+            Console.WriteLine($"-----------------------------------------------------------------------{Environment.NewLine}");
 
             var rooms = MeetingRoomsService.GetAllRoomAddressesFromActiveDirectory();
+            var allAppointments = new List<Appointment>();
 
             foreach (var room in rooms)
             {
                 try
                 {
-                    var appointments = MeetingRoomsService.GetAppointmentsForUser(room, 2);
-
-                    if (appointments != null)
+                    var roomAppointments = MeetingRoomsService.GetAppointmentsForUser(room, 2);
+                    if (roomAppointments != null)
                     {
-                        output += $"{room,-35}{appointments.Count,-45}{Environment.NewLine}";
-
-                        if (appointments.Count > 0)
-                        {
-                            output += $"{Environment.NewLine}\tAppointments...{Environment.NewLine}";
-                        }
-
-                        foreach (var appointment in appointments)
-                        {
-                            // From the point of view of the meeting room, certian information is different than from the organizer's pov. Use this to get the organizer pov if so desired.
-                            //var organizerAppointment =
-                            //    MeetingRoomsService.GetAppointmentForUserByICalId(appointment.Organizer.Address, 2,
-                            //        appointment.ICalUid);
-
-                            _appointmentManager.AddOrUpdateAppointment(appointment);
-                            output += $"\t-----------------------------------------------------------------{Environment.NewLine}";
-                            output += $"\t           Subject: {appointment.Subject}{Environment.NewLine}";
-                            output += $"\t        Start Time: {appointment.Start}{Environment.NewLine}";
-                            output += $"\t          Location: {appointment.Location}{Environment.NewLine}"; 
-                            output += $"\t          End Time: {appointment.End}{Environment.NewLine}";
-                            output += $"\t           ICal Id: ...{appointment.ICalUid.Substring(appointment.ICalUid.Length - 30)}{Environment.NewLine}";
-                            output += $"\t         Unique Id: ...{appointment.Id.UniqueId.Substring(appointment.Id.UniqueId.Length - 30)}{Environment.NewLine}";
-                            output += $"\t         Change Id: {appointment.Id.ChangeKey}{Environment.NewLine}";
-                            output += $"\t         Organizer: {appointment.Organizer}{Environment.NewLine}";
-                            output += $"\tRequired Attendees: {GetAttendeeNamesAndResponse(appointment.RequiredAttendees)}{Environment.NewLine}";
-                            output += $"\tOptional Attendees: {GetAttendeeNamesAndResponse(appointment.OptionalAttendees)}{Environment.NewLine}";
-                            output += $"\t-----------------------------------------------------------------{Environment.NewLine}";
-                        }
+                        allAppointments.AddRange(roomAppointments);
+                        Console.WriteLine($"{room,-35}{roomAppointments.Count,-45}");
                     }
                 }
                 catch (Exception ex)
@@ -117,29 +91,11 @@ namespace AppointmentRetriever
                 }
             }
 
-            Console.WriteLine(output);
-        }
-
-        private static string GetAttendeeNamesAndResponse(AttendeeCollection attendees)
-        {
-            var nameList = new List<string>();
-            foreach (var attendee in attendees)
+            if (allAppointments.Count > 0)
             {
-                var s = attendee.Name + " -> ";
-
-                if (attendee.ResponseType.HasValue)
-                {
-                    s += attendee.ResponseType.Value;
-                }
-                else
-                {
-                    s += "None";
-                }
-
-                nameList.Add(s);
+                _appointmentManager.AddOrUpdateAppointments(allAppointments);
+                Console.WriteLine(_appointmentManager.AppointmentsToString());
             }
-
-            return string.Join(",", nameList);
         }
 
         #endregion Private Helpers
